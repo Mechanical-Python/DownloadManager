@@ -9,16 +9,19 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Net;
 using System.Threading;
+using System.Net.Http;
 
 namespace DownloadManagerUI
 {
     public partial class AddLinkUI : Form
     {
         DownloadmanagerUI downloadManagerUI = null;
+        private readonly HttpClient _httpClient;
         public AddLinkUI(DownloadmanagerUI downloadManagerUI)
         {
             InitializeComponent();
             this.downloadManagerUI = downloadManagerUI;
+            _httpClient = new HttpClient();
         }
 
         public bool IsGoodStatus { get; set; }
@@ -57,43 +60,30 @@ namespace DownloadManagerUI
             }
         }
 
-        private void CheckLink(string url)
+        private async Task CheckLink(string url)
         {
-            try
+            if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
             {
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                IsGoodStatus = true;
+                try
+                {
+                    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                    HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
+                    IsGoodStatus = true;
+                }
+                catch (Exception e)
+                {
+                    MessageBox.Show($"{e.Message}",
+                        "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    IsGoodStatus = false;
+                }
             }
-            catch (Exception e)
+            else
             {
-                MessageBox.Show($"{e.Message}",
-                    "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Invalid URL. Please enter a valid URL",
+                "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 IsGoodStatus = false;
             }
         }
-
-        //RADI
-        //private void CheckLink(string url)
-        //{
-        //    Thread thread = new Thread(() =>
-        //    {
-        //        try
-        //        {
-        //            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-        //            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-        //            IsGoodStatus = true;
-        //        }
-        //        catch (Exception e)
-        //        {
-        //            MessageBox.Show($"{e.Message}",
-        //                "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        //            IsGoodStatus = false;
-        //        }
-        //    });
-        //    thread.Start();
-        //    thread.Join();
-        //}
     }
 }
 

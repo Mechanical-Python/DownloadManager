@@ -18,6 +18,7 @@ namespace DownloadManagerUI
     {
         public static string filePathDirectoryToWrite = @"C:\Users\machine\Downloads";
         public static List<string> filesToDownload = new List<string>();
+        
 
         public void PassLink(string link)
         {   
@@ -34,11 +35,13 @@ namespace DownloadManagerUI
 
         private void buttonSaveTo_Click(object sender, EventArgs e)
         {
-            FolderBrowserDialog folder = new FolderBrowserDialog();
-
-            if (folder.ShowDialog() == DialogResult.OK)
+            using (FolderBrowserDialog folder = new FolderBrowserDialog())
             {
-                filePathDirectoryToWrite = folder.SelectedPath.ToString();
+                DialogResult result = folder.ShowDialog();
+                if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(folder.SelectedPath))
+                {
+                    filePathDirectoryToWrite = folder.SelectedPath.ToString();
+                } 
             }
         }
 
@@ -87,19 +90,46 @@ namespace DownloadManagerUI
             }
         }
 
+        //private void buttonRemoveLink_Click(object sender, EventArgs e)
+        //{
+        //    var selectedItems = listBoxOfDownloadFiles.SelectedItems;
+        //    var linksToRemove = new List<string>();
+
+        //    foreach (var item in selectedItems)
+        //    {
+        //        linksToRemove.Add(item.ToString());
+        //    }
+
+        //    filesToDownload.RemoveAll(x => linksToRemove.Contains(x));
+
+        //    // Refresh the listbox
+        //    listBoxOfDownloadFiles.DataSource = null;
+        //    listBoxOfDownloadFiles.DataSource = filesToDownload;
+        //}
+
         private async void buttonDownload_Click(object sender, EventArgs e)
         {
-            await RunDownloadAsync();
+            try
+            {
+                await DownloadFileAsync();
+                progressBar.Value = 100;
+                labelStatusProgress.Text = "Download completed";
+            }
+            catch (Exception ex)
+            {
+                // code to handle any exceptions that may occur during the download process
+                MessageBox.Show("An error occurred during the download process: " + ex.Message);
+            }
         }
 
-        public async Task RunDownloadAsync()
-        {
-            progressBar.Value = 0;
-            progressBar.Maximum = 100;
-            await Task.Run(() => DownloadFileAsync());
-            labelStatusProgress.Text = "Files are downloaded!";
+        //public async Task RunDownloadAsync()
+        //{
+        //    progressBar.Value = 0;
+        //    progressBar.Maximum = 100;
+        //    await Task.Run(() => DownloadFileAsync());
+        //    labelStatusProgress.Text = "Files are downloaded!";
 
-        }
+        //}
         //public async Task RunDownloadAsync()
         //{
         //    labelStatusProgress.Text = "Downloading is started...";
@@ -157,7 +187,7 @@ namespace DownloadManagerUI
 
         public async Task DownloadFileAsync()
         {
-            Thread thread = new Thread(async () =>
+            Task task = Task.Run(async () =>
             {
                 using (var webClient = new WebClient())
                 {
@@ -172,7 +202,7 @@ namespace DownloadManagerUI
                     
                 }
             });
-            await Task.Run(() => thread.Start());
+            await task;
         }
         public void DownloadFileSync()
         {
@@ -189,12 +219,26 @@ namespace DownloadManagerUI
 
         public async Task MoveFilesAsync(string fileName)
         {
-            // Get the full path of the download and the destination folder.
-            string fromPath = Path.Combine(Application.StartupPath, fileName);
-            string toPath = Path.Combine(filePathDirectoryToWrite, fileName);
-            // Move the file.
-            await Task.Run(() => File.Move(fromPath, toPath));
+            Task moveFilesTask = Task.Run(() => {
+                // Get the full path of the download and the destination folder.
+                string fromPath = Path.Combine(Application.StartupPath, fileName);
+                string toPath = Path.Combine(filePathDirectoryToWrite, fileName);
+
+                // Check if the file already exists in the destination folder.
+                if (File.Exists(toPath))
+                {
+                    // Handle the file already exists case
+                    Console.WriteLine("File already exists in the destination folder: " + toPath);
+                    return;
+                }
+                // Move the file.
+                File.Move(fromPath, toPath);
+            });
+            await moveFilesTask;
         }
+
+            
+
         public void MoveFilesSync(string fileName)
         {
             // Get the full path of the download and the destination folder.
@@ -219,7 +263,7 @@ namespace DownloadManagerUI
         void client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
         {
             this.BeginInvoke((MethodInvoker)delegate {
-                labelStatusProgress.Text = "Files are downloaded!";
+                labelStatusProgress.Text = "File is downloaded!";
             });
         }
     }
