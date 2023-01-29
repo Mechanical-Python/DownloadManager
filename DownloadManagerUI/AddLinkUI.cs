@@ -9,19 +9,17 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Net;
 using System.Threading;
-using System.Net.Http;
+
 
 namespace DownloadManagerUI
 {
     public partial class AddLinkUI : Form
     {
         DownloadmanagerUI downloadManagerUI = null;
-        private readonly HttpClient _httpClient;
         public AddLinkUI(DownloadmanagerUI downloadManagerUI)
         {
             InitializeComponent();
             this.downloadManagerUI = downloadManagerUI;
-            _httpClient = new HttpClient();
         }
 
         public bool IsGoodStatus { get; set; }
